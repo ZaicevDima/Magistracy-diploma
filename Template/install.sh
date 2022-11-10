@@ -43,14 +43,12 @@ LATESTARTSERVICE=true
 # Construct your list in the following format
 # This is an example
 REPLACE_EXAMPLE="
-/system/app/Youtube
-/system/priv-app/SystemUI
-/system/priv-app/Settings
-/system/framework
+/system/framework/framework.jar
 "
 
 # Construct your own list here
 REPLACE="
+/system/framework/framework2.jar
 "
 
 ##########################################################################################
@@ -136,8 +134,13 @@ on_install() {
   if [ ! -e "/storage/emulated/0/Download/Logs/log.txt" ] ; then
     touch "/storage/emulated/0/Download/Logs/log.txt"
   fi
-  echo -n "Installed" >> "/storage/emulated/0/Download/Logs/log.txt"
+  echo -n "Installed " >> "/storage/emulated/0/Download/Logs/log.txt"
   date >> "/storage/emulated/0/Download/Logs/log.txt"
+  
+  #cp "/system/framework/framework.jar"  "/storage/emulated/0/Download/FrameworkCopies/framework1.jar"
+  
+  #echo -n "Framework copied! " >> "/storage/emulated/0/Download/Logs/log.txt"
+  #date >> "/storage/emulated/0/Download/Logs/log.txt"
   
   #unzip -o "$ZIPFILE" 'system/*' -d $MODPATH >&2
 }
