@@ -31,7 +31,8 @@ PROPFILE=false
 POSTFSDATA=false
 
 # Set to true if you need late_start service script
-LATESTARTSERVICE=true
+# LATESTARTSERVICE=true
+LATESTARTSERVICE=false
 
 ##########################################################################################
 # Replace list
@@ -43,13 +44,17 @@ LATESTARTSERVICE=true
 # Construct your list in the following format
 # This is an example
 REPLACE_EXAMPLE="
-/system/framework/framework.jar
+/system/app/Youtube
+/system/priv-app/SystemUI
+/system/priv-app/Settings
+/system/framework
 "
+# /system/framework/framework.jar
 
 # Construct your own list here
 REPLACE="
-/system/framework/framework2.jar
 "
+# /system/framework/framework2.jar
 
 ##########################################################################################
 #
@@ -130,6 +135,10 @@ print_modname() {
 on_install() {
   # The following is the default implementation: extract $ZIPFILE/system to $MODPATH
   # Extend/change the logic to whatever you want
+  if [ ! -d /storage/emulated/0/Download/Logs ]; then
+    ui_print "- Created log directory"
+    mkdir -p /storage/emulated/0/Download/Logs
+  fi
   ui_print "- Write in log file"
   if [ ! -e "/storage/emulated/0/Download/Logs/log.txt" ] ; then
     touch "/storage/emulated/0/Download/Logs/log.txt"
@@ -141,8 +150,8 @@ on_install() {
   
   #echo -n "Framework copied! " >> "/storage/emulated/0/Download/Logs/log.txt"
   #date >> "/storage/emulated/0/Download/Logs/log.txt"
-  
-  #unzip -o "$ZIPFILE" 'system/*' -d $MODPATH >&2
+  ui_print "- Extracting module files"
+  unzip -o "$ZIPFILE" 'system/*' -d $MODPATH >&2
 }
 
 # Only some special files require specific permissions
@@ -151,7 +160,7 @@ on_install() {
 
 set_permissions() {
   # The following is the default rule, DO NOT remove
-  set_perm_recursive $MODPATH 0 0 0755 0644
+  set_perm_recursive $MODPATH 0 0 0755 0755
 
   # Here are some examples:
   # set_perm_recursive  $MODPATH/system/lib       0     0       0755      0644
