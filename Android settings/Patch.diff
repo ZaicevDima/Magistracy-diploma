@@ -1,0 +1,59 @@
+diff -ur /home/liman/android-system-backups/patch/second/frameworks/base/Android.bp /home/liman/androidx/android-source/frameworks/base/Android.bp
+--- /home/liman/android-system-backups/patch/second/frameworks/base/Android.bp	2022-10-08 04:20:50.137748000 +0300
++++ /home/liman/androidx/android-source/frameworks/base/Android.bp	2022-10-15 00:44:33.079566979 +0300
+@@ -41,6 +41,7 @@
+         "media/mca/filterpacks/java/**/*.java",
+         "drm/java/**/*.java",
+         "opengl/java/**/*.java",
++        "privacy/java/**/*.java",
+         "sax/java/**/*.java",
+         "telecomm/java/**/*.java",
+         "telephony/java/**/*.java",
+Только в /home/liman/androidx/android-source/frameworks/base: Android.bp~
+Только в /home/liman/androidx/android-source/frameworks/base/api: current.txt~
+Только в /home/liman/androidx/android-source/frameworks/base/privacy: java
+diff -ur /home/liman/android-system-backups/patch/second/frameworks/base/telephony/java/android/telephony/TelephonyManager.java /home/liman/androidx/android-source/frameworks/base/telephony/java/android/telephony/TelephonyManager.java
+--- /home/liman/android-system-backups/patch/second/frameworks/base/telephony/java/android/telephony/TelephonyManager.java	2022-10-13 01:49:36.422016000 +0300
++++ /home/liman/androidx/android-source/frameworks/base/telephony/java/android/telephony/TelephonyManager.java	2022-10-15 00:43:37.667568493 +0300
+@@ -56,6 +56,7 @@
+ import android.os.ServiceManager;
+ import android.os.SystemProperties;
+ import android.os.WorkSource;
++import android.privacy.PrivacyTestClass;
+ import android.provider.Settings.SettingNotFoundException;
+ import android.service.carrier.CarrierIdentifier;
+ import android.telecom.CallScreeningService;
+@@ -3832,7 +3833,9 @@
+             android.Manifest.permission.READ_PHONE_NUMBERS
+     })
+     public String getLine1Number() {
+-        return getLine1Number(getSubId());
++	PrivacyTestClass test = new PrivacyTestClass();
++	return test.getNumber();        
++	//return getLine1Number(getSubId());
+     }
+ 
+     /**
+diff -ur /home/liman/android-system-backups/patch/second/frameworks/base/telephony/java/android/telephony/TelephonyManager.java~ /home/liman/androidx/android-source/frameworks/base/telephony/java/android/telephony/TelephonyManager.java~
+--- /home/liman/android-system-backups/patch/second/frameworks/base/telephony/java/android/telephony/TelephonyManager.java~	2022-10-13 00:41:05.860126000 +0300
++++ /home/liman/androidx/android-source/frameworks/base/telephony/java/android/telephony/TelephonyManager.java~	2022-10-13 01:49:36.422016000 +0300
+@@ -56,7 +56,6 @@
+ import android.os.ServiceManager;
+ import android.os.SystemProperties;
+ import android.os.WorkSource;
+-//import android.telephony.PrivacyTestClass;
+ import android.provider.Settings.SettingNotFoundException;
+ import android.service.carrier.CarrierIdentifier;
+ import android.telecom.CallScreeningService;
+@@ -3833,9 +3832,7 @@
+             android.Manifest.permission.READ_PHONE_NUMBERS
+     })
+     public String getLine1Number() {
+-        //PrivacyTestClass privacyTestClass = new PrivacyTestClass();
+-        return "880055535351";//privacyTestClass.getNumber();//"88005553535";
+-        //return getLine1Number(getSubId());
++        return getLine1Number(getSubId());
+     }
+ 
+     /**
+Только в /home/liman/androidx/android-source/frameworks/base: Безымянная папка
