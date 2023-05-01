@@ -15,15 +15,10 @@ using zygisk::Api;
 using zygisk::AppSpecializeArgs;
 using zygisk::ServerSpecializeArgs;
 
-//static jstring (*orig_method)(JNIEnv* env, jclass clazz, jlong windowPtr,
-//                              jint row, jint column);
 static jstring my_method(JNIEnv* env, jclass clazz, jlong windowPtr,
                          jint row, jint column) {
-    jstring result = env->NewStringUTF("88005553535");
     return nullptr;
 };
-
-//static void example_handler(int socket) { ... }
 
 class ExampleModule : public zygisk::ModuleBase {
 public:
@@ -33,18 +28,13 @@ public:
     }
     void preAppSpecialize(zygisk::AppSpecializeArgs *args) override {
         const char *nice_name = env->GetStringUTFChars(args->nice_name, nullptr);
-        const char *process = "com.example.myemptyapp";
-        const char *nice_name2 = "com.example.mycheckapp";//"my-log-file";
+        const char *nice_name2 = "com.example.mycheckapp";
 
         if (strcmp(nice_name, nice_name2) == 0) {
-            LOGD("process=[%s], nice-name =[%s]!!!!!!!!!!!!!\n", process, nice_name);
-
             JNINativeMethod methods[] = { {"nativeGetString", "(JII)Ljava/lang/String;", (void*)(my_method)} };
 
             api->hookJniNativeMethods(env, "android/database/CursorWindow", methods, 1);
-            //*(void **) &orig_method = methods[0].fnPtr;
         }
-        //preSpecialize(process, nice_name, dir);
     }
 private:
     zygisk::Api *api;
@@ -68,5 +58,3 @@ private:
 };
 
 REGISTER_ZYGISK_MODULE(ExampleModule)
-
-//REGISTER_ZYGISK_COMPANION(example_handler)
