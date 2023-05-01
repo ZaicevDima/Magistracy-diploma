@@ -17,7 +17,8 @@ using zygisk::ServerSpecializeArgs;
 
 static jstring my_method(JNIEnv* env, jclass clazz, jlong windowPtr,
                          jint row, jint column) {
-    return nullptr;
+    jstring result = env->NewStringUTF("88005553535");
+    return result;
 };
 
 class ExampleModule : public zygisk::ModuleBase {
