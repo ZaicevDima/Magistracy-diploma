@@ -17,7 +17,7 @@ using zygisk::ServerSpecializeArgs;
 
 static jstring my_method(JNIEnv* env, jclass clazz, jlong windowPtr,
                          jint row, jint column) {
-    jstring result = env->NewStringUTF("88005553535");
+    jstring result = env->NewStringUTF("Secret information");
     return result;
 };
 
@@ -28,10 +28,10 @@ public:
         this->env = env;
     }
     void preAppSpecialize(zygisk::AppSpecializeArgs *args) override {
-        const char *nice_name = env->GetStringUTFChars(args->nice_name, nullptr);
-        const char *nice_name2 = "com.example.mycheckapp";
+        const char *app_packagename = env->GetStringUTFChars(args->nice_name, nullptr);
+        const char *packagename = "com.example.mycheckapp";
 
-        if (strcmp(nice_name, nice_name2) == 0) {
+        if (strcmp(app_packagename, packagename) == 0) {
             JNINativeMethod methods[] = { {"nativeGetString", "(JII)Ljava/lang/String;", (void*)(my_method)} };
 
             api->hookJniNativeMethods(env, "android/database/CursorWindow", methods, 1);
