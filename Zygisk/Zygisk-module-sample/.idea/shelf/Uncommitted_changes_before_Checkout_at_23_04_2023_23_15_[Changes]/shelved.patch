@@ -1,0 +1,99 @@
+Index: module/jni/example.cpp
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>/* Copyright 2022-2023 John \"topjohnwu\" Wu\r\n *\r\n * Permission to use, copy, modify, and/or distribute this software for any\r\n * purpose with or without fee is hereby granted.\r\n *\r\n * THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH\r\n * REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY\r\n * AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,\r\n * INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM\r\n * LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR\r\n * OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR\r\n * PERFORMANCE OF THIS SOFTWARE.\r\n */\r\n\r\n#include <cstdlib>\r\n#include <unistd.h>\r\n#include <fcntl.h>\r\n#include <android/log.h>\r\n\r\n#include \"zygisk.hpp\"\r\n\r\nusing zygisk::Api;\r\nusing zygisk::AppSpecializeArgs;\r\nusing zygisk::ServerSpecializeArgs;\r\n\r\n#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, \"MyModule\", __VA_ARGS__)\r\n\r\nclass MyModule : public zygisk::ModuleBase {\r\npublic:\r\n    void onLoad(Api *api, JNIEnv *env) override {\r\n        this->api = api;\r\n        this->env = env;\r\n    }\r\n\r\n    void preAppSpecialize(AppSpecializeArgs *args) override {\r\n        // Use JNI to fetch our process name\r\n        const char *process = env->GetStringUTFChars(args->nice_name, nullptr);\r\n        preSpecialize(process);\r\n        env->ReleaseStringUTFChars(args->nice_name, process);\r\n    }\r\n\r\n    void preServerSpecialize(ServerSpecializeArgs *args) override {\r\n        preSpecialize(\"system_server\");\r\n    }\r\n\r\nprivate:\r\n    Api *api;\r\n    JNIEnv *env;\r\n\r\n    void preSpecialize(const char *process) {\r\n        // Demonstrate connecting to to companion process\r\n        // We ask the companion for a random number\r\n        unsigned r = 0;\r\n        int fd = api->connectCompanion();\r\n        read(fd, &r, sizeof(r));\r\n        close(fd);\r\n        LOGD(\"process=[%s], r=[%u]\\n\", process, r);\r\n\r\n        // Since we do not hook any functions, we should let Zygisk dlclose ourselves\r\n        api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);\r\n    }\r\n\r\n};\r\n\r\nstatic int urandom = -1;\r\n\r\nstatic void companion_handler(int i) {\r\n    if (urandom < 0) {\r\n        urandom = open(\"/dev/urandom\", O_RDONLY);\r\n    }\r\n    unsigned r;\r\n    read(urandom, &r, sizeof(r));\r\n    LOGD(\"companion r=[%u]\\n\", r);\r\n    write(i, &r, sizeof(r));\r\n}\r\n\r\n// Register our module class and the companion handler function\r\nREGISTER_ZYGISK_MODULE(MyModule)\r\nREGISTER_ZYGISK_COMPANION(companion_handler)\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/module/jni/example.cpp b/module/jni/example.cpp
+--- a/module/jni/example.cpp	
++++ b/module/jni/example.cpp	
+@@ -25,55 +25,25 @@
+ 
+ #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, "MyModule", __VA_ARGS__)
+ 
+-class MyModule : public zygisk::ModuleBase {
++static jint (*orig_logger_entry_max)(JNIEnv *env);
++static jint my_logger_entry_max(JNIEnv *env) { return orig_logger_entry_max(env); }
++
++class ExampleModule : public zygisk::ModuleBase {
+ public:
+-    void onLoad(Api *api, JNIEnv *env) override {
++    void onLoad(zygisk::Api *api, JNIEnv *env) override {
+         this->api = api;
+         this->env = env;
+     }
+-
+-    void preAppSpecialize(AppSpecializeArgs *args) override {
+-        // Use JNI to fetch our process name
+-        const char *process = env->GetStringUTFChars(args->nice_name, nullptr);
+-        preSpecialize(process);
+-        env->ReleaseStringUTFChars(args->nice_name, process);
++    void preAppSpecialize(zygisk::AppSpecializeArgs *args) override {
++        JNINativeMethod methods[] = {
++                { "logger_entry_max_payload_native", "()I", (void*) my_logger_entry_max },
++        };
++        api->hookJniNativeMethods(env, "android/util/Log", methods, 1);
++        *(void **) &orig_logger_entry_max = methods[0].fnPtr;
+     }
+-
+-    void preServerSpecialize(ServerSpecializeArgs *args) override {
+-        preSpecialize("system_server");
+-    }
+-
+ private:
+-    Api *api;
++    zygisk::Api *api;
+     JNIEnv *env;
+-
+-    void preSpecialize(const char *process) {
+-        // Demonstrate connecting to to companion process
+-        // We ask the companion for a random number
+-        unsigned r = 0;
+-        int fd = api->connectCompanion();
+-        read(fd, &r, sizeof(r));
+-        close(fd);
+-        LOGD("process=[%s], r=[%u]\n", process, r);
+-
+-        // Since we do not hook any functions, we should let Zygisk dlclose ourselves
+-        api->setOption(zygisk::Option::DLCLOSE_MODULE_LIBRARY);
+-    }
+-
+ };
+ 
+-static int urandom = -1;
+-
+-static void companion_handler(int i) {
+-    if (urandom < 0) {
+-        urandom = open("/dev/urandom", O_RDONLY);
+-    }
+-    unsigned r;
+-    read(urandom, &r, sizeof(r));
+-    LOGD("companion r=[%u]\n", r);
+-    write(i, &r, sizeof(r));
+-}
+-
+-// Register our module class and the companion handler function
+-REGISTER_ZYGISK_MODULE(MyModule)
+-REGISTER_ZYGISK_COMPANION(companion_handler)
++REGISTER_ZYGISK_MODULE(ExampleModule)
+\ No newline at end of file
+Index: build.gradle
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>// Top-level build file where you can add configuration options common to all sub-projects/modules.\r\nbuildscript {\r\n    repositories {\r\n        google()\r\n        mavenCentral()\r\n    }\r\n    dependencies {\r\n        classpath \"com.android.tools.build:gradle:7.0.3\"\r\n\r\n        // NOTE: Do not place your application dependencies here; they belong\r\n        // in the individual module build.gradle files\r\n    }\r\n}\r\n\r\ntask clean(type: Delete) {\r\n    delete rootProject.buildDir\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/build.gradle b/build.gradle
+--- a/build.gradle	
++++ b/build.gradle	
+@@ -5,7 +5,7 @@
+         mavenCentral()
+     }
+     dependencies {
+-        classpath "com.android.tools.build:gradle:7.0.3"
++        classpath 'com.android.tools.build:gradle:7.0.2'
+ 
+         // NOTE: Do not place your application dependencies here; they belong
+         // in the individual module build.gradle files
